@@ -41,7 +41,7 @@ You can specify the file you want dt to work with like so:
 ```sh
 dt hello-world.md
 ```
-dt will generate a table of contents in your `README.md` if you navigate into the directory containing that file and then running it with no arguments like so:
+However dt does not actually require any arguments if you are already in the directory containing the file and its name is `README.md`.
 ```sh
 dt
 ```
