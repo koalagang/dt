@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# AUTHOR: koalagang (https://github.com/koalagang)
+# See dt's repository at https://github.com/koalagang/dt
+
+# shellcheck disable=SC2016
+
+while getopts 'cm' OPT; do
+    case "$OPT" in
+        c)  comment1="<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->"
+            comment2='<!-- END doctoc generated TOC please keep comment here to allow auto update -->' ;;
+        m)  allow_multi_toc=1 ;;
+        *)  echo 'did you mean `dt -c`?' ; exit 0
+    esac
+done
+
+[ -n "$comment1" ] || comment1='<!-- DO NOT EDIT THIS SECTION, INSTEAD RE-RUN dt TO UPDATE -->'
+[ -n "$comment2" ] || comment2='<!-- END dt generated TOC please keep comment here to allow auto update -->'
+
+# If as file is specified then use that. If not file is specified then try using a README.md.
+# If neither of those are present then output an error and exit.
+if [ -n "$1" ] && [ "$1" != '-c' ]; then
+    file="$1"
+elif [ -n "$1" ] && [ "$1" = '-c' ]; then
+    [ "$1" = '-c' ] && file="$2"
+elif [ -f 'README.md' ]; then
+    file='README.md'
+else
+    echo 'dt: error: please select a file or navigate to a directory containing `README.md`' && exit 0
+fi
+
+start_line_num="$(grep -nw "$comment1" "$file" | head -1 | cut -d':' -f1)"
+[ -z "$start_line_num" ] && printf 'dt: error: it appears that the necessary comments are not present. Please insert them into your markdown file before proceding.\n\nTo function, dt requires that the following lines are present:\n%s\n%s\n' "$comment1" "$comment2" && exit 0
+end_line_num="$(grep -nw "$comment2" "$file" | head -1 | cut -d':' -f1)"
+
+[ "$((end_line_num - start_line_num))" -eq 1 ] || sed -i "$((start_line_num + 1)),$((end_line_num - 1)) d" "$file" # remove the old TOC so that we don't have multiple TOCs
+
+table_line_num="$((start_line_num + 1))"
+
+# define what the TOC looks like based on the headings (lines which start with one to six hashes)
+table="$(grep '^#' "$file" | grep '^#' "$file" | sed -e 's/^##/-/g' -e 's/^-#/\t-/g' -e 's/^\t-#/\t\t-/g' -e 's/^\t\t-#/\t\t\t-/g' -e 's/^\t\t\t-#/\t\t\t\t-/g' -e '/^#/d')"
+# write the TOC to the file
+{ head -n "$start_line_num" "$file"; echo "$table"; tail -n +"$table_line_num" "$file"; } > "/tmp/dt.md"
+mv "/tmp/dt.md" "$file"
+
+# link the headings listed in the TOC to the respective headings
+end_line_num="$(grep -nw "$comment2" "$file" | head -1 | cut -d':' -f1)"
+count="$table_line_num"
+until [ "$count" = "$end_line_num" ]; do
+    content="$(sed -n "$count"p "$file")"
+    content="${content#* }"
+    sed -i "s/$(sed -n "$count"p "$file")/$(sed -n "$count"p "$file" | sed -e "s/$content/\[$content\]/g" -e "s/$/(#$(echo "$content" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g'))/")/g" "$file"
+    count="$((count + 1))"
+done
