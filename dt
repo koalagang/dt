@@ -9,7 +9,7 @@ while getopts 'cm' OPT; do
     case "$OPT" in
         c)  comment1="<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->"
             comment2='<!-- END doctoc generated TOC please keep comment here to allow auto update -->' ;;
-        m)  allow_multi_toc=1 ;;
+        f)  allow_multi_toc=1 ;;
         *)  echo 'did you mean `dt -c`?' ; exit 0
     esac
 done
