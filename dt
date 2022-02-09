@@ -10,14 +10,14 @@ while getopts 'cm' OPT; do
         c)  comment1="<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->"
             comment2='<!-- END doctoc generated TOC please keep comment here to allow auto update -->' ;;
         f)  allow_multi_toc=1 ;;
-        *)  echo 'did you mean `dt -c`?' ; exit 0
+        *)  echo 'did you mean `dt -c` or `dt -f`?' ; exit 0
     esac
 done
 
 [ -n "$comment1" ] || comment1='<!-- DO NOT EDIT THIS SECTION, INSTEAD RE-RUN dt TO UPDATE -->'
 [ -n "$comment2" ] || comment2='<!-- END dt generated TOC please keep comment here to allow auto update -->'
 
-# If as file is specified then use that. If not file is specified then try using a README.md.
+# If a file is specified then use that. If a file is not specified then try using a README.md.
 # If neither of those are present then output an error and exit.
 if [ -n "$1" ] && [ "$1" != '-c' ]; then
     file="$1"
@@ -37,8 +37,8 @@ end_line_num="$(grep -nw "$comment2" "$file" | head -1 | cut -d':' -f1)"
 
 table_line_num="$((start_line_num + 1))"
 
-# define what the TOC looks like based on the headings (lines which start with one to six hashes)
-table="$(grep '^#' "$file" | grep '^#' "$file" | sed -e 's/^##/-/g' -e 's/^-#/\t-/g' -e 's/^\t-#/\t\t-/g' -e 's/^\t\t-#/\t\t\t-/g' -e 's/^\t\t\t-#/\t\t\t\t-/g' -e '/^#/d')"
+# define what the TOC looks like based on the headings (lines which start with 1-6 hashes)
+table="$(grep '^#' "$file" | sed -e 's/^##/-/g' -e 's/^-#/\t-/g' -e 's/^\t-#/\t\t-/g' -e 's/^\t\t-#/\t\t\t-/g' -e 's/^\t\t\t-#/\t\t\t\t-/g' -e '/^#/d')"
 # write the TOC to the file
 { head -n "$start_line_num" "$file"; echo "$table"; tail -n +"$table_line_num" "$file"; } > "/tmp/dt.md"
 mv "/tmp/dt.md" "$file"
